@@ -12,6 +12,13 @@ using namespace std::chrono;
 using namespace std;
 using namespace seal;
 
+// cd src
+// g++ main.cpp pir.hpp pir.cpp pir_client.hpp pir_client.cpp pir_server.hpp pir_server.cpp -o main -lseal-4.1 -L/usr/local/lib -I/usr/local/include/SEAL-4.1
+
+//16MB server answer 1s
+//1GB server answer 17s
+//没有太多意义了。
+
 int main(int argc, char *argv[]) {
 
   uint64_t number_of_items = 1 << 16;
@@ -62,11 +69,14 @@ int main(int argc, char *argv[]) {
   // and assign each client an index or id, then call the procedure below.
   server.set_galois_key(0, galois_keys);
 
+
+
+
   cout << "Main: Creating the database with random data (this may take some "
           "time) ..."
        << endl;
 
-  // Create test database
+  // Create test database//生成数据库
   auto db(make_unique<uint8_t[]>(number_of_items * size_per_item));
 
   // Copy of the database. We use this at the end to make sure we retrieved
@@ -77,13 +87,14 @@ int main(int argc, char *argv[]) {
   auto gen =  factory.create();
   for (uint64_t i = 0; i < number_of_items; i++) {
     for (uint64_t j = 0; j < size_per_item; j++) {
-      uint8_t val = gen->generate() % 256;
+      uint8_t val = gen->generate() % 256; // 8 bits
       db.get()[(i * size_per_item) + j] = val;
       db_copy.get()[(i * size_per_item) + j] = val;
     }
   }
-
+  cout<<"The database size is: "<<number_of_items*size_per_item/1024<< " KB"<<endl;
   // Measure database setup
+
   auto time_pre_s = high_resolution_clock::now();
   server.set_database(move(db), number_of_items, size_per_item);
   server.preprocess_database();
@@ -94,8 +105,12 @@ int main(int argc, char *argv[]) {
 
   // Choose an index of an element in the DB
   random_device rd;
+
+  // query_index
   uint64_t ele_index =
       rd() % number_of_items; // element in DB at random position
+  // query_index
+
   uint64_t index = client.get_fv_index(ele_index);   // index of FV plaintext
   uint64_t offset = client.get_fv_offset(ele_index); // offset in FV plaintext
   cout << "Main: element index = " << ele_index << " from [0, "
